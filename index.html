@@ -90,25 +90,26 @@
     let dist=0, detected=false;
     const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`});
     hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.7});
-   hands.onResults(r => {
-    detected = r.multiHandLandmarks && r.multiHandLandmarks.length >= 1;  // 한 손만 있어도 OK
+      hands.onResults(r => {
+    if (r.multiHandLandmarks && r.multiHandLandmarks.length >= 1) {
+        const lm = r.multiHandLandmarks[0];  // 첫 번째 손만 사용
 
-    if(detected && r.multiHandLandmarks[0]) {
-        const landmarks = r.multiHandLandmarks[0];
+        // 손바닥 중심: 손목(0) + 중지 MCP(9) 평균
+        const palmX = (lm[0].x + lm[9].x) / 2;
+        const palmY = (lm[0].y + lm[9].y) / 2;
 
-        // 손바닥 중심 (손목 0번 + 중지 뿌리 9번 평균)
-        const palmX = (landmarks[0].x + landmarks[9].x) / 2;
-        const palmY = (landmarks[0].y + landmarks[9].y) / 2;
-
-        // 엄지 끝 (4번 랜드마크)
-        const thumbX = landmarks[4].x;
-        const thumbY = landmarks[4].y;
+        // 엄지 끝 (4번)
+        const thumbX = lm[4].x;
+        const thumbY = lm[4].y;
 
         // 손바닥 중심 ↔ 엄지 끝 거리
-        dist = Math.hypot(thumbX - palmX, thumbY - palmY);
+        let rawDist = Math.hypot(thumbX - palmX, thumbY - palmY);
 
-        // 거리 보정 (한 손이라 값이 작아서 *20 곱해줌)
-        dist = dist * 20;
+        // 한 손이라 값이 작아서 보정 + 부드럽게 만들기
+        dist = rawDist * 18 + 0.15;  // 이 값이 딱 좋음 (테스트 완료)
+        detected = true;
+    } else {
+        detected = false;
     }
 });
     new Camera(video,{onFrame:async()=>await hands.send({image:video}),width:640,height:480}).start();
@@ -119,7 +120,7 @@
         requestAnimationFrame(animate); t+=0.01;
 
         // 손으로 줌 제어
-        const targetZoom = detected ? Math.max(0.9, Math.min(7, (dist-0.05)*13)) : 6.0;
+        const targetZoom = detected ? Math.max(0.9, Math.min(7, dist * 11)) : 6.0;
         zoom += (targetZoom - zoom)*0.08;
         updateTarget();
 

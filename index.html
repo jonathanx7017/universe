@@ -90,13 +90,27 @@
     let dist=0, detected=false;
     const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`});
     hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.7});
-    hands.onResults(r=>{
-        detected = r.multiHandLandmarks && r.multiHandLandmarks.length===2;
-        if(detected){
-            const a=r.multiHandLandmarks[0][8], b=r.multiHandLandmarks[1][8];
-            dist = Math.hypot(a.x-b.x, a.y-b.y);
-        }
-    });
+   hands.onResults(r => {
+    detected = r.multiHandLandmarks && r.multiHandLandmarks.length >= 1;  // 한 손만 있어도 OK
+
+    if(detected && r.multiHandLandmarks[0]) {
+        const landmarks = r.multiHandLandmarks[0];
+
+        // 손바닥 중심 (손목 0번 + 중지 뿌리 9번 평균)
+        const palmX = (landmarks[0].x + landmarks[9].x) / 2;
+        const palmY = (landmarks[0].y + landmarks[9].y) / 2;
+
+        // 엄지 끝 (4번 랜드마크)
+        const thumbX = landmarks[4].x;
+        const thumbY = landmarks[4].y;
+
+        // 손바닥 중심 ↔ 엄지 끝 거리
+        dist = Math.hypot(thumbX - palmX, thumbY - palmY);
+
+        // 거리 보정 (한 손이라 값이 작아서 *20 곱해줌)
+        dist = dist * 20;
+    }
+});
     new Camera(video,{onFrame:async()=>await hands.send({image:video}),width:640,height:480}).start();
 
     // 애니메이션

@@ -3,18 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universe → Saturn Magic</title>
+    <title>Saturn Zoom Magic</title>
     <style>
         body { margin:0; overflow:hidden; background:#000; }
         #info { position:absolute; top:20px; left:20px; z-index:100; background:rgba(0,0,0,0.6); padding:14px 28px; border-radius:30px; backdrop-filter:blur(10px); color:#fff; font-size:15px; }
+        #menu { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:100; background:rgba(15,15,25,0.9); padding:16px 36px; border-radius:50px; backdrop-filter:blur(15px); border:1px solid rgba(100,160,255,0.4); box-shadow:0 10px 40px rgba(0,0,0,0.7); display:flex; gap:22px; }
+        .btn { padding:13px 30px; background:rgba(40,40,70,0.7); color:#ddd; border:1px solid rgba(120,180,255,0.5); border-radius:30px; cursor:pointer; font-weight:600; font-size:15px; transition:all .3s; min-width:100px; text-align:center; }
+        .btn:hover { background:rgba(80,140,255,0.4); color:white; }
+        .btn.active { background:linear-gradient(135deg,#5af,#28f); color:white; box-shadow:0 0 25px rgba(100,180,255,0.8); border:none; }
     </style>
 </head>
 <body>
-<div id="info">손 인터랙션 테스트</div>
+<div id="info">interaction test </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three …
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
+<div id="menu">
+    <div class="btn active">Saturn</div>
+    <div class="btn">Sphere</div>
+    <div class="btn">Heart</div>
+    <div class="btn">Flower</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
 
 <script>
     const scene = new THREE.Scene();
@@ -32,7 +43,7 @@
     const target = new Float32Array(COUNT * 3);
     geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-    // 은은한 파티클 텍스처
+    // 은은한 파티클
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 32;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createRadialGradient(16,16,0,16,16,16);
@@ -73,10 +84,7 @@
     }
     updateTarget();
 
-    // 두 손 인터랙션
-    const video = document.createElement('video');
-    video.style.display = 'none';
-    document.body.appendChild(video);
+    const video = document.createElement('video'); video.style.display='none'; document.body.appendChild(video);
     let dist = 0, detected = false;
 
     const hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`});
@@ -91,7 +99,6 @@
     });
     new Camera(video, {onFrame: async () => await hands.send({image: video}), width: 640, height: 480}).start();
 
-    // 애니메이션
     let t = 0;
     function animate(){
         requestAnimationFrame(animate); t += 0.01;

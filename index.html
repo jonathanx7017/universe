@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saturn Zoom – Original Feel</title>
+    <title>Universe → Saturn Magic</title>
     <style>
         body { margin:0; overflow:hidden; background:#000; }
         #info { position:absolute; top:20px; left:20px; z-index:100; background:rgba(0,0,0,0.6); padding:14px 28px; border-radius:30px; backdrop-filter:blur(10px); color:#fff; font-size:15px; }
@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-<div id="info">손 오므리기 → 새턴 선명 • 벌리기 → 우주처럼 퍼짐</div>
+<div id="info">두 손 사용 인터랙션 테스트</div>
 <div id="menu">
     <div class="btn active">Saturn</div>
     <div class="btn">Sphere</div>
@@ -38,28 +38,23 @@
     const COUNT = 3200;
     const geom = new THREE.BufferGeometry();
     const pos = new Float32Array(COUNT*3);
-    const base = new Float32Array(COUNT*3);     // 새턴 기준 위치
-    const target = new Float32Array(COUNT*3);   // 현재 확대/축소된 위치
+    const base = new Float32Array(COUNT*3);
+    const target = new Float32Array(COUNT*3);
     geom.setAttribute('position', new THREE.BufferAttribute(pos,3));
 
-    // ★ 완전 원래 그 은은한 파티클 텍스처 ★
+    // 원래 그 은은한 흰색 파티클
     const canvas = document.createElement('canvas'); canvas.width=canvas.height=32;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createRadialGradient(16,16,0,16,16,16);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.4, 'rgba(255,255,255,0.4)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,32,32);
+    grad.addColorStop(0,'rgba(255,255,255,1)');
+    grad.addColorStop(0.4,'rgba(255,255,255,0.4)');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,32,32);
     const tex = new THREE.CanvasTexture(canvas);
 
     const mat = new THREE.PointsMaterial({
-        size: 0.6,            // 원래 크기
-        map: tex,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        color: 0xffffff
+        size:0.6, map:tex, transparent:true, opacity:0.9,
+        depthWrite:false, blending:THREE.AdditiveBlending, color:0xffffff
     });
     const particles = new THREE.Points(geom, mat); scene.add(particles);
 
@@ -81,37 +76,24 @@
         }
     }
 
-    let zoom = 6.0;  // 시작은 6배 퍼진 상태
+    let zoom = 6.0;
     function updateTarget(){ for(let i=0;i<COUNT*3;i++) target[i]=base[i]*zoom; }
     updateTarget();
 
-    // 손 인식
+    // 두 손 인터랙션 완전 복원
     const video = document.createElement('video'); video.style.display='none'; document.body.appendChild(video);
     let dist=0, detected=false;
+
     const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`});
-    hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.7});
-      hands.onResults(r => {
-    if (r.multiHandLandmarks && r.multiHandLandmarks.length >= 1) {
-        const lm = r.multiHandLandmarks[0];  // 첫 번째 손만 사용
-
-        // 손바닥 중심: 손목(0) + 중지 MCP(9) 평균
-        const palmX = (lm[0].x + lm[9].x) / 2;
-        const palmY = (lm[0].y + lm[9].y) / 2;
-
-        // 엄지 끝 (4번)
-        const thumbX = lm[4].x;
-        const thumbY = lm[4].y;
-
-        // 손바닥 중심 ↔ 엄지 끝 거리
-        let rawDist = Math.hypot(thumbX - palmX, thumbY - palmY);
-
-        // 한 손이라 값이 작아서 보정 + 부드럽게 만들기
-        dist = rawDist * 18 + 0.15;  // 이 값이 딱 좋음 (테스트 완료)
-        detected = true;
-    } else {
-        detected = false;
-    }
-});
+    hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.7, minTrackingConfidence:0.7});
+    hands.onResults(r=>{
+        detected = r.multiHandLandmarks && r.multiHandLandmarks.length === 2;
+        if(detected){
+            const a = r.multiHandLandmarks[0][8];  // 왼손 검지 끝
+            const b = r.multiHandLandmarks[1][8];  // 오른손 검지 끝
+            dist = Math.hypot(a.x-b.x, a.y-b.y);
+        }
+    });
     new Camera(video,{onFrame:async()=>await hands.send({image:video}),width:640,height:480}).start();
 
     // 애니메이션
@@ -119,27 +101,23 @@
     function animate(){
         requestAnimationFrame(animate); t+=0.01;
 
-        // 손으로 줌 제어
-        const targetZoom = detected ? Math.max(0.9, Math.min(7, dist * 11)) : 6.0;
+        const targetZoom = detected ? Math.max(0.9, Math.min(7, (dist - 0.05)*13)) : 6.0;
         zoom += (targetZoom - zoom)*0.08;
         updateTarget();
 
-        // 부드럽게 따라가기
         const p = geom.attributes.position.array;
-        for(let i=0;i<COUNT*3;i++) p[i] += (target[i]-p[i])*0.08;
-        geom.attributes.position.needsUpdate = true;
+        for(let i=0;i<COUNT*3;i++) p.array[i] += (target[i]-p.array[i])*0.08;
+        p.needsUpdate = true;
 
         particles.rotation.y += 0.003;
         particles.rotation.x += 0.0008;
-
-        // 아주 은은한 반짝임만
         mat.size = 0.6 + Math.sin(t*4)*0.06;
 
         renderer.render(scene,camera);
     }
     animate();
 
-    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
 </script>
 </body>
 </html>

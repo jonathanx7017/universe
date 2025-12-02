@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zoom Saturn Magic</title>
+    <title>Perfect Saturn Zoom</title>
     <style>
         body { margin:0; overflow:hidden; background:#000; font-family:system-ui; }
-        #info { position:absolute; top:20px; left:20px; z-index:100; background:rgba(0,0,0,0.6); padding:12px 25px; border-radius:30px; backdrop-filter:blur(10px); color:#fff; font-size:14px; }
-        #menu { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:100; background:rgba(15,15,25,0.85); padding:16px 32px; border-radius:50px; backdrop-filter:blur(15px); border:1px solid rgba(80,120,180,0.3); box-shadow:0 10px 40px rgba(0,0,0,0.6); display:flex; gap:20px; }
-        .btn { padding:12px 28px; background:rgba(40,40,60,0.6); color:#ccc; border:1px solid rgba(100,150,220,0.4); border-radius:30px; cursor:pointer; font-weight:500; font-size:15px; transition:all .4s; min-width:90px; text-align:center; }
-        .btn:hover { background:rgba(70,120,200,0.4); color:#fff; transform:translateY(-2px); }
-        .btn.active { background:linear-gradient(135deg,rgba(100,180,255,0.6),rgba(60,120,220,0.8)); color:white; border:1px solid rgba(120,200,255,0.8); box-shadow:0 0 20px rgba(100,180,255,0.5); font-weight:600; }
+        #info { position:absolute; top:20px; left:20px; z-index:100; background:rgba(0,0,0,0.6); padding:14px 28px; border-radius:30px; backdrop-filter:blur(10px); color:#fff; font-size:15px; }
+        #menu { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:100; background:rgba(15,15,25,0.9); padding:16px 36px; border-radius:50px; backdrop-filter:blur(15px); border:1px solid rgba(100,160,255,0.4); box-shadow:0 10px 40px rgba(0,0,0,0.7); display:flex; gap:22px; }
+        .btn { padding:13px 30px; background:rgba(40,40,70,0.7); color:#ddd; border:1px solid rgba(120,180,255,0.5); border-radius:30px; cursor:pointer; font-weight:600; font-size:15px; transition:all .3s; min-width:100px; text-align:center; }
+        .btn:hover { background:rgba(80,140,255,0.4); color:white; }
+        .btn.active { background:linear-gradient(135deg,#5af,#28f); color:white; box-shadow:0 0 25px rgba(100,180,255,0.8); border:none; }
     </style>
 </head>
 <body>
-<div id="info">손 벌리기 = 새턴 확대 (우주처럼 퍼짐) • 오므리기 = 새턴 선명하게 모임</div>
-
+<div id="info">손으로 인터랙션 테스트 </div>
 <div id="menu">
     <div class="btn active" data-shape="Saturn">Saturn</div>
     <div class="btn" data-shape="Sphere">Sphere</div>
@@ -30,108 +29,119 @@
 <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
-    camera.position.z = 35;
+    camera.position.z = 32;
     const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
     renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(devicePixelRatio);
     document.body.appendChild(renderer.domElement);
-    scene.add(new THREE.AmbientLight(0x404040));
+    scene.add(new THREE.AmbientLight(0x505070));
 
-    const COUNT = 3000;
+    const COUNT = 3800;  // 파티클 수 조금 더 늘림
     const geom = new THREE.BufferGeometry();
     const pos = new Float32Array(COUNT*3);
-    const target = new Float32Array(COUNT*3);
-    for(let i=0;i<COUNT*3;i++) pos[i]=(Math.random()-0.5)*50;
+    const baseTarget = new Float32Array(COUNT*3);  // 새턴 기준 위치 저장
+    const displayTarget = new Float32Array(COUNT*3); // 현재 보여지는 목표 위치
     geom.setAttribute('position', new THREE.BufferAttribute(pos,3));
 
-    const canvas = document.createElement('canvas'); canvas.width=canvas.height=32;
+    // 부드럽고 큰 파티클 텍스처
+    const canvas = document.createElement('canvas'); canvas.width=canvas.height=64;
     const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(16,16,0,16,16,16);
-    grad.addColorStop(0,'rgba(255,255,255,1)');
-    grad.addColorStop(0.4,'rgba(255,255,255,0.4)');
-    grad.addColorStop(1,'rgba(255,255,255,0)');
-    ctx.fillStyle=grad; ctx.fillRect(0,0,32,32);
+    const grad = ctx.createRadialGradient(32,32,0,32,32,32);
+    grad.addColorStop(0,'#ffffff');
+    grad.addColorStop(0.3,'#bbddff');
+    grad.addColorStop(1,'transparent');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,64,64);
     const tex = new THREE.CanvasTexture(canvas);
 
     const mat = new THREE.PointsMaterial({
-        size:0.6, map:tex, transparent:true, opacity:0.9,
-        depthWrite:false, blending:THREE.AdditiveBlending, color:0xffffff
+        size: 1.4,           // 크게!
+        map: tex,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        color: 0xffffff
     });
     const particles = new THREE.Points(geom, mat); scene.add(particles);
 
-    // 새턴 형태 고정 (항상 새턴 파티클만 사용)
-    const saturnShape = () => {
-        const a = [];
+    // 새턴 기준 위치 미리 계산 (이 위치 기준으로 확대/축소)
+    function generateSaturnBase(){
         for(let i=0; i<COUNT; i++){
-            if(Math.random()>0.3){
-                const u=Math.random(),v=Math.random();
-                const theta=2*Math.PI*u,phi=Math.acos(2*v-1);
-                a.push(6*Math.sin(phi)*Math.cos(theta),6*Math.sin(phi)*Math.sin(theta),6*Math.cos(phi));
+            if(Math.random() > 0.32){
+                const u=Math.random(), v=Math.random();
+                const theta=2*Math.PI*u, phi=Math.acos(2*v-1);
+                const r=5.8;
+                baseTarget[i*3]   = r*Math.sin(phi)*Math.cos(theta);
+                baseTarget[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+                baseTarget[i*3+2] = r*Math.cos(phi);
             } else {
-                const ang=Math.random()*Math.PI*2,d=9+Math.random()*6;
-                a.push(d*Math.cos(ang),(Math.random()-0.5)*0.8,d*Math.sin(ang));
+                const ang=Math.random()*Math.PI*2;
+                const dist=9 + Math.random()*6.5;
+                baseTarget[i*3]   = dist*Math.cos(ang);
+                baseTarget[i*3+1] = (Math.random()-0.5)*1;
+                baseTarget[i*3+2] = dist*Math.sin(ang);
             }
         }
-        return a;
-    };
-
-    // 처음부터 새턴 형태로 설정 (퍼진 상태로 시작)
-    const saturnPositions = saturnShape();
-    for(let i=0; i<saturnPositions.length; i++) {
-        target[i] = saturnPositions[i] * 5;  // 처음엔 5배로 퍼져서 시작 (넓은 우주처럼)
     }
+    generateSaturnBase();
 
-    function transition(name){
-        if(name === 'Saturn') {
-            for(let i=0; i<saturnPositions.length; i++) target[i] = saturnPositions[i] * 5;  // 다시 퍼진 상태로
-        } else {
-            // 다른 모양은 기존처럼
-            const shapes = { /* Sphere, Heart, Flower 기존 코드 */ };
-            const p = shapes[name]();
-            for(let i=0;i<p.length;i++) target[i]=p[i];
-        }
-        document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
-        document.querySelector(`.btn[data-shape="${name}"]`).classList.add('active');
+    // 초기 상태: 6배 퍼진 새턴
+    let currentZoom = 6.0;
+    function updateDisplayTarget(){
+        for(let i=0; i<COUNT*3; i++) displayTarget[i] = baseTarget[i] * currentZoom;
     }
-    transition('Saturn');
+    updateDisplayTarget();
 
-    document.querySelectorAll('.btn').forEach(btn => btn.onclick = () => transition(btn.dataset.shape));
-
+    // 버튼
+    document.querySelectorAll('.btn').forEach(b=>b.onclick=()=>alert('다른 모양은 나중에 추가할게요~ 지금은 완벽한 새턴만!'));
+    
+    // 손 인식
     const video = document.createElement('video'); video.style.display='none'; document.body.appendChild(video);
-    let dist=0, detected=false;
+    let handDistance = 0, handsDetected = false;
 
     const hands = new Hands({locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`});
-    hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.7});
-    hands.onResults(r=>{
-        detected = r.multiHandLandmarks && r.multiHandLandmarks.length===2;
-        if(detected){
-            const a=r.multiHandLandmarks[0][8], b=r.multiHandLandmarks[1][8];
-            dist = Math.hypot(a.x-b.x, a.y-b.y);
+    hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.75, minTrackingConfidence:0.75});
+    hands.onResults(res => {
+        handsDetected = res.multiHandLandmarks && res.multiHandLandmarks.length === 2;
+        if(handsDetected){
+            const a = res.multiHandLandmarks[0][8];
+            const b = res.multiHandLandmarks[1][8];
+            handDistance = Math.hypot(a.x-b.x, a.y-b.y);
         }
     });
-    new Camera(video,{onFrame:async()=>await hands.send({image:video}),width:640,height:480}).start();
+    new Camera(video, {onFrame: async()=>await hands.send({image:video}), width:640, height:480}).start();
 
-    let scale=5, t=0;  // 시작 스케일 5배 (퍼진 상태)
+    // 애니메이션
+    let t=0;
     function animate(){
         requestAnimationFrame(animate); t+=0.01;
 
-        // 파티클 위치는 새턴 고정, 스케일만 손으로 제어
+        // 손 거리로 줌 제어 (손 없으면 서서히 퍼짐)
+        let targetZoom;
+        if(handsDetected){
+            targetZoom = Math.max(0.9, Math.min(7, (handDistance - 0.04)*14));
+        } else {
+            targetZoom = 6.0;  // 손 없으면 자동으로 넓게
+        }
+        currentZoom += (targetZoom - currentZoom) * 0.07;
+        updateDisplayTarget();
+
+        // 부드러운 모핑
         const p = geom.attributes.position.array;
-        for(let i=0;i<COUNT*3;i++) p[i] += (target[i] - p[i])*0.05;
+        for(let i=0;i<COUNT*3;i++){
+            p[i] += (displayTarget[i] - p[i]) * 0.08;
+        }
         geom.attributes.position.needsUpdate = true;
 
-        // 손 거리로 스케일 조절 (줄이면 모이고, 벌리면 퍼짐)
-        const targetScale = detected ? Math.max(0.8, Math.min(6, (dist-0.05)*12)) : 5;  // 손 없으면 자동으로 퍼진 상태
-        scale += (targetScale - scale)*0.08;
-        particles.scale.setScalar(scale);
-
+        particles.scale.setScalar(1);
         particles.rotation.y += 0.003;
-        particles.rotation.x += 0.0008;
-        mat.size = 0.6 + Math.sin(t*5)*0.08;
+        particles.rotation.x += 0.0006;
+
+        mat.size = 1.4 + Math.sin(t*6)*0.3;  // 반짝임
         renderer.render(scene,camera);
     }
     animate();
 
-    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
 </script>
 </body>
 </html>

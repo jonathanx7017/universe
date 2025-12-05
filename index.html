@@ -3,278 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEWTYPE Style Parallax Particle System</title>
-    
-    <!-- Google Fonts: Roboto Flex (Similar to Google Sans Flex) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
-
+    <title>Interactive Hand-Controlled Particle System</title>
     <style>
-        :root {
-            --font-main: 'Roboto Flex', 'Google Sans', sans-serif;
-            --color-bg: #050505;
-            --color-text: #ffffff;
-            --glass-bg: rgba(20, 20, 20, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        body { 
-            margin: 0; 
-            background: var(--color-bg); 
-            font-family: var(--font-main);
-            color: var(--color-text);
-            overflow-x: hidden; /* Hide horizontal scroll */
-        }
-
-        /* 3D Canvas - Fixed Background */
-        canvas { 
-            display: block; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            z-index: -1; 
-            width: 100vw; 
-            height: 100vh;
-        }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
         
-        /* UI Overlay (Controls) - Fixed */
+        /* UI Overlay */
         #ui-container {
-            position: fixed;
+            position: absolute;
             top: 20px;
-            right: 20px; /* Moved to right to not block text */
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            padding: 24px;
+            left: 20px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px;
             border-radius: 16px;
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
             width: 220px;
-            z-index: 1000;
+            z-index: 100;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: opacity 0.3s;
         }
 
-        h2.ui-title { margin: 0 0 15px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #888; font-weight: 600; }
+        h2 { margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
 
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
         
         button {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.05);
-            color: #ccc;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
             padding: 10px;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 11px;
-            font-family: var(--font-main);
-            text-transform: uppercase;
+            transition: all 0.2s;
+            font-size: 12px;
         }
 
-        button:hover { background: rgba(255,255,255,0.15); color: white; }
-        button.active { background: #fff; color: #000; font-weight: 700; border-color: #fff; }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.active { background: #3b82f6; color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
 
         .control-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 8px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;}
+        label { display: block; margin-bottom: 8px; font-size: 12px; color: #ccc; }
         
         input[type="color"] {
-            width: 100%; height: 30px; border: none; background: none; cursor: pointer;
-        }
-
-        /* --- Parallax Content Layout (Newtype Style) --- */
-        main {
-            position: relative;
-            z-index: 10;
             width: 100%;
-        }
-
-        section {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0 10vw;
-            box-sizing: border-box;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .hero-section {
-            align-items: flex-start;
-            padding-top: 20vh;
-        }
-
-        h1 {
-            font-size: clamp(3rem, 8vw, 10rem);
-            line-height: 0.9;
-            font-weight: 800;
-            margin: 0;
-            letter-spacing: -0.03em;
-            background: linear-gradient(180deg, #fff, #888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            font-size: clamp(1rem, 2vw, 1.5rem);
-            font-weight: 300;
-            color: #aaa;
-            margin-top: 2rem;
-            max-width: 600px;
-            line-height: 1.6;
-        }
-
-        .content-section {
-            align-items: flex-start;
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 4rem;
-            width: 100%;
-            margin-top: 4rem;
-        }
-
-        .sticky-label {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #666;
-            font-weight: 600;
-        }
-
-        .text-block p {
-            font-size: clamp(1.2rem, 3vw, 2.5rem);
-            font-weight: 400;
-            line-height: 1.4;
-            margin: 0 0 2rem 0;
-            color: #eee;
-        }
-        
-        .text-block span {
-            color: #666;
-        }
-
-        .footer-section {
-            min-height: 50vh;
-            justify-content: flex-end;
-            padding-bottom: 4rem;
-        }
-
-        .footer-link {
-            font-size: 14px;
-            color: #666;
-            text-decoration: none;
-            border-bottom: 1px solid #333;
-            padding-bottom: 4px;
+            height: 30px;
+            border: none;
+            background: none;
+            cursor: pointer;
         }
 
         #loading {
-            position: fixed;
+            position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+            font-size: 24px;
             pointer-events: none;
             transition: opacity 0.5s;
-            z-index: 2000;
         }
 
+        /* Hide the webcam video element, we only want the data */
         .input_video { display: none; }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #050505; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-
-        @media (max-width: 768px) {
-            .grid-layout { grid-template-columns: 1fr; gap: 2rem; }
-            #ui-container { width: calc(100% - 40px); top: auto; bottom: 20px; left: 20px; right: 20px; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Loading -->
-    <div id="loading">System Initializing...</div>
+    <!-- Loading Indicator -->
+    <div id="loading">Initializing Camera & AI...</div>
 
     <!-- UI Panel -->
     <div id="ui-container">
-        <h2 class="ui-title">Visual Template</h2>
+        <h2>Shape Template</h2>
         <div class="btn-group">
             <button onclick="setShape('heart')" id="btn-heart">Heart</button>
             <button onclick="setShape('flower')" id="btn-flower">Flower</button>
+            <!-- Saturn is now active by default -->
             <button onclick="setShape('saturn')" id="btn-saturn" class="active">Saturn</button>
-            <button onclick="setShape('fireworks')" id="btn-fireworks">Galaxy</button>
+            <button onclick="setShape('fireworks')" id="btn-fireworks">Fireworks</button>
         </div>
 
         <div class="control-group">
-            <label>Accent Color</label>
+            <label>Particle Color</label>
             <input type="color" id="colorPicker" value="#00ffff">
         </div>
         
         <div class="control-group">
-            <label style="color: #555; font-size: 10px; line-height: 1.4;">
-                Interactive Mode Active<br>
-                Gestures: Open Hand (Expand) / Fist (Contract)
+            <label style="color: #666; font-size: 10px;">
+                Show hand to camera.<br>Open hand = Expand<br>Closed fist = Contract
             </label>
         </div>
     </div>
 
-    <!-- Parallax Content Overlay -->
-    <main>
-        <!-- Section 1: Hero -->
-        <section class="hero-section">
-            <h1>NEW TYPE<br>OF DESIGN.</h1>
-            <div class="subtitle">
-                We construct digital realities through code and motion.<br>
-                Experience the intersection of technology and aesthetics.
-            </div>
-        </section>
-
-        <!-- Section 2: About / Philosophy -->
-        <section class="content-section">
-            <div class="grid-layout">
-                <div class="sticky-label">01. PHILOSOPHY</div>
-                <div class="text-block">
-                    <p>Design is not just what it looks like and feels like. <span>Design is how it works. We believe in stripping away the unnecessary to reveal the essence of the digital experience.</span></p>
-                    <p>Through real-time interaction, we bridge the gap between user intent and visual feedback.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Capabilities -->
-        <section class="content-section">
-            <div class="grid-layout">
-                <div class="sticky-label">02. INTERACTION</div>
-                <div class="text-block">
-                    <p>Use your hands to control the universe behind this text. <span>Our systems are built to react, adapt, and evolve with human input.</span></p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 4: Footer -->
-        <section class="footer-section">
-            <div class="grid-layout">
-                <div class="sticky-label">CONTACT</div>
-                <div class="text-block">
-                    <p style="font-size: 1.5rem;">hello@newtype.design</p>
-                    <a href="#" class="footer-link">Instagram</a> &nbsp;
-                    <a href="#" class="footer-link">Twitter</a>
-                    <br><br>
-                    <div style="font-size: 12px; color: #444;">© 2025 NEWTYPE DESIGN. All Rights Reserved.</div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Hidden Video -->
+    <!-- Hidden Video Element for MediaPipe -->
     <video class="input_video"></video>
 
-    <!-- Scripts -->
+    <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
@@ -283,7 +108,6 @@
     <script>
         // --- 1. Three.js Setup ---
         const scene = new THREE.Scene();
-        // Darker fog for depth
         scene.fog = new THREE.FogExp2(0x050505, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -292,33 +116,33 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        
-        // Disable auto clear to potentially handle trails, but standard here
         document.body.appendChild(renderer.domElement);
 
         // --- 2. Particle System Logic ---
-        const PARTICLE_COUNT = 18000; // Increased count for denser look
+        const PARTICLE_COUNT = 15000;
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(PARTICLE_COUNT * 3);
-        const targetPositions = new Float32Array(PARTICLE_COUNT * 3);
-        
-        // Initialize random
+        const targetPositions = new Float32Array(PARTICLE_COUNT * 3); // Where particles want to go
+        const colors = new Float32Array(PARTICLE_COUNT * 3);
+
+        // Initialize random positions
         for (let i = 0; i < PARTICLE_COUNT * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 150;
+            positions[i] = (Math.random() - 0.5) * 100;
             targetPositions[i] = positions[i];
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         
+        // Custom texture for soft particles
         const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
 
         const material = new THREE.PointsMaterial({
-            size: 0.15,
+            size: 0.2,
             color: 0x00ffff,
             map: sprite,
             sizeAttenuation: true,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.8,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
@@ -326,8 +150,9 @@
         const particles = new THREE.Points(geometry, material);
         scene.add(particles);
 
-        // --- Shape Logic (Copied & Optimized) ---
+        // Shape Generators
         function getPointOnHeart(t) {
+            // Parametric heart equation
             const x = 16 * Math.pow(Math.sin(t), 3);
             const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
             return { x: x, y: y };
@@ -335,72 +160,96 @@
 
         function generateShape(type) {
             const arr = new Float32Array(PARTICLE_COUNT * 3);
+            
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 const i3 = i * 3;
                 let x, y, z;
 
                 if (type === 'heart') {
+                    // 3D Heart using parametric equation rotated
                     const t = Math.random() * Math.PI * 2;
                     const p = getPointOnHeart(t);
+                    // Add thickness
                     const r = Math.random() * 2;
                     const phi = Math.random() * Math.PI * 2;
+                    
                     x = p.x + r * Math.cos(phi);
                     y = p.y + r * Math.sin(phi);
-                    z = r * Math.sin(phi) * 4;
+                    z = r * Math.sin(phi) * 4; // Flatten slightly
+                    
                 } else if (type === 'flower') {
+                    // Phyllotaxis sphere
                     const phi = Math.acos(-1 + (2 * i) / PARTICLE_COUNT);
                     const theta = Math.sqrt(PARTICLE_COUNT * Math.PI) * phi;
-                    const r = 15 + 5 * Math.sin(phi * 6);
+                    const r = 15 + 5 * Math.sin(phi * 6); // Flower petal variance
+                    
                     x = r * Math.cos(theta) * Math.sin(phi);
                     y = r * Math.sin(theta) * Math.sin(phi);
                     z = r * Math.cos(phi);
+
                 } else if (type === 'saturn') {
                     const r = Math.random();
-                    if (r > 0.4) {
-                        const radius = 9;
+                    if (r > 0.3) {
+                        // Planet Body
+                        const radius = 8;
                         const phi = Math.acos( -1 + ( 2 * Math.random() ) );
                         const theta = Math.sqrt( PARTICLE_COUNT * Math.PI ) * phi;
                         x = radius * Math.cos( theta ) * Math.sin( phi );
                         y = radius * Math.sin( theta ) * Math.sin( phi );
                         z = radius * Math.cos( phi );
                     } else {
+                        // Ring
                         const angle = Math.random() * Math.PI * 2;
-                        const radius = 14 + Math.random() * 8;
+                        const radius = 12 + Math.random() * 6;
                         x = Math.cos(angle) * radius;
                         z = Math.sin(angle) * radius;
-                        y = (Math.random() - 0.5) * 0.2;
+                        y = (Math.random() - 0.5) * 0.5; // Very flat
                         
-                        const tilt = 0.5;
+                        // Tilt the ring
+                        const tilt = 0.4;
                         const ty = y * Math.cos(tilt) - z * Math.sin(tilt);
                         const tz = y * Math.sin(tilt) + z * Math.cos(tilt);
                         y = ty; z = tz;
                     }
+
                 } else if (type === 'fireworks') {
-                    const r = Math.pow(Math.random(), 1/3) * 25;
+                    // Explosion bursts
+                    const r = Math.pow(Math.random(), 1/3) * 20; // Uniform sphere volume
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos(2 * Math.random() - 1);
+                    
                     x = r * Math.sin(phi) * Math.cos(theta);
                     y = r * Math.sin(phi) * Math.sin(theta);
                     z = r * Math.cos(phi);
                 }
-                arr[i3] = x; arr[i3 + 1] = y; arr[i3 + 2] = z;
+
+                arr[i3] = x;
+                arr[i3 + 1] = y;
+                arr[i3 + 2] = z;
             }
             return arr;
         }
 
+        // --- 3. Interaction State ---
+        // CHANGED: Default shape is now 'saturn'
         let currentShape = 'saturn';
-        let handOpenness = 0.5;
-        let smoothedOpenness = 0.5;
+        let handOpenness = 0.5; // 0 (Closed) to 1 (Open)
+        let smoothedOpenness = 0.5; // For smooth animation
 
         function updateTargetPositions() {
             const newPos = generateShape(currentShape);
             targetPositions.set(newPos);
         }
+
+        // Initial setup
         updateTargetPositions();
 
+        // UI Listeners
         window.setShape = (shape) => {
             currentShape = shape;
             updateTargetPositions();
+            
+            // UI Active State
             document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
             document.getElementById(`btn-${shape}`).classList.add('active');
         };
@@ -409,100 +258,130 @@
             material.color.set(e.target.value);
         });
 
-        // --- 3. Parallax & Interaction Loop ---
-        
-        let scrollY = 0;
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
-
+        // --- 4. Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Hand Interaction
+            // Smoothly interpolate hand data
             smoothedOpenness += (handOpenness - smoothedOpenness) * 0.1;
-            const handScale = 0.3 + (smoothedOpenness * 1.5);
-            
-            // 2. Parallax Calculation
-            // Rotate particles based on scroll
-            const scrollRotation = scrollY * 0.0005;
-            // Move camera down slightly as we scroll down
-            const scrollYOffset = scrollY * 0.01;
 
-            // Update Particles
+            // Map openness to scale
+            // Open hand (1.0) -> Scale 1.5 (Expand)
+            // Closed hand (0.0) -> Scale 0.3 (Contract)
+            const targetScale = 0.3 + (smoothedOpenness * 1.5);
+            
+            // Lerp particle positions
             const positionsAttribute = geometry.attributes.position;
             const array = positionsAttribute.array;
 
+            const time = Date.now() * 0.001;
+
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 const i3 = i * 3;
-                array[i3] += (targetPositions[i3] - array[i3]) * 0.04;
-                array[i3 + 1] += (targetPositions[i3 + 1] - array[i3 + 1]) * 0.04;
-                array[i3 + 2] += (targetPositions[i3 + 2] - array[i3 + 2]) * 0.04;
+                
+                // Base morphing logic (move towards shape)
+                array[i3] += (targetPositions[i3] - array[i3]) * 0.05;
+                array[i3 + 1] += (targetPositions[i3 + 1] - array[i3 + 1]) * 0.05;
+                array[i3 + 2] += (targetPositions[i3 + 2] - array[i3 + 2]) * 0.05;
+
+                // Add subtle idle noise
+                if (currentShape === 'fireworks') {
+                    array[i3 + 1] -= 0.02; // Gravity
+                    if(array[i3+1] < -20) array[i3+1] = 20;
+                }
             }
+
             positionsAttribute.needsUpdate = true;
 
-            // Apply Hand Scale
-            particles.scale.setScalar(handScale);
+            // Apply global scale based on hand interaction
+            particles.scale.setScalar(targetScale);
             
-            // Apply Scroll/Parallax Rotation
-            // Base rotation + Scroll influence
-            particles.rotation.y = (Date.now() * 0.0002) + scrollRotation;
-            particles.rotation.z = (Date.now() * 0.0001);
-
-            // Optional: Move camera based on scroll for more depth
-            // camera.position.y = -scrollYOffset; 
+            // Slow rotation
+            particles.rotation.y += 0.002;
+            particles.rotation.z += 0.001;
 
             renderer.render(scene, camera);
         }
 
         animate();
 
-        // --- 4. Hand Tracking ---
+        // --- 5. MediaPipe Hands Integration ---
         const videoElement = document.getElementsByClassName('input_video')[0];
 
         function onResults(results) {
+            // Hide loading text once we have results
             document.getElementById('loading').style.display = 'none';
+
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 let totalOpenness = 0;
+                
+                // Process all detected hands
                 results.multiHandLandmarks.forEach((landmarks) => {
+                    // Calculate "Openness" based on distance from wrist (0) to finger tips (4, 8, 12, 16, 20)
                     const wrist = landmarks[0];
                     const tips = [4, 8, 12, 16, 20];
                     let avgDist = 0;
+
                     tips.forEach(tipIndex => {
                         const tip = landmarks[tipIndex];
-                        avgDist += Math.sqrt(Math.pow(tip.x - wrist.x, 2) + Math.pow(tip.y - wrist.y, 2));
+                        // Euclidean distance
+                        const d = Math.sqrt(
+                            Math.pow(tip.x - wrist.x, 2) + 
+                            Math.pow(tip.y - wrist.y, 2)
+                        );
+                        avgDist += d;
                     });
-                    avgDist /= 5;
+
+                    avgDist /= 5; // Average distance of 5 fingers
+
+                    // Normalize roughly (0.1 is closed, 0.4 is open usually in normalized coord space)
                     let openness = (avgDist - 0.1) / 0.25;
                     openness = Math.max(0, Math.min(1, openness));
                     totalOpenness += openness;
                 });
+
+                // Average if two hands
                 handOpenness = totalOpenness / results.multiHandLandmarks.length;
             } else {
+                // Default float state if no hands
                 handOpenness = 0.5; 
             }
         }
 
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
         hands.setOptions({
             maxNumHands: 2,
             modelComplexity: 1,
             minDetectionConfidence: 0.5,
             minTrackingConfidence: 0.5
         });
+
         hands.onResults(onResults);
 
+        // Setup Camera
         const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => await hands.send({image: videoElement}),
-            width: 640, height: 480
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
         });
-        cameraUtils.start();
+        
+        cameraUtils.start().catch(err => {
+            console.error("Camera Error:", err);
+            document.getElementById('loading').innerText = "Camera access denied. Please allow camera.";
+        });
 
+        // Resize handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
     </script>
 </body>
 </html>

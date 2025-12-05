@@ -77,9 +77,10 @@
     <div id="ui-container">
         <h2>Shape Template</h2>
         <div class="btn-group">
-            <button onclick="setShape('heart')" id="btn-heart" class="active">Heart</button>
+            <button onclick="setShape('heart')" id="btn-heart">Heart</button>
             <button onclick="setShape('flower')" id="btn-flower">Flower</button>
-            <button onclick="setShape('saturn')" id="btn-saturn">Saturn</button>
+            <!-- Saturn is now active by default -->
+            <button onclick="setShape('saturn')" id="btn-saturn" class="active">Saturn</button>
             <button onclick="setShape('fireworks')" id="btn-fireworks">Fireworks</button>
         </div>
 
@@ -230,7 +231,8 @@
         }
 
         // --- 3. Interaction State ---
-        let currentShape = 'heart';
+        // CHANGED: Default shape is now 'saturn'
+        let currentShape = 'saturn';
         let handOpenness = 0.5; // 0 (Closed) to 1 (Open)
         let smoothedOpenness = 0.5; // For smooth animation
 
